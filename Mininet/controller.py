@@ -89,8 +89,8 @@ class ControllerBase(object):
 		icmp_reply.payload = echo
 
 		ip_p = pkt.ipv4()
-		ip_p.srcip = ipDst
-		ip_p.dstip = ipSrc
+		ip_p.srcip = packet.payload.dstip
+		ip_p.dstip = packet.payload.srcip
 		ip_p.protocol = pkt.ipv4.ICMP_PROTOCOL
 		ip_p.payload = icmp_reply
 
@@ -328,13 +328,6 @@ class Controller(ControllerBase):
 			log.debug("NAT request, bad route. Ignoring.")
 			return
 
-		#Already assigned
-		if (srcIP,app_port) in self.natTable:
-			traffic_port = self.natTable[(dstIP,app_port)][2]
-			log.debug("Sending nat reply to %r at already alocated port %r \n"%(str(packet.payload.srcip),str(traffic_port)))
-			self.forge_udp(packet,data,traffic_port,16)
-			return
-
 		# Find free port
 		traffic_port = random.randint(20000,30000)
 		initial_port = traffic_port
@@ -362,7 +355,7 @@ class Controller(ControllerBase):
 
 		# client - server
 		flow = of.ofp_flow_mod()
-		flow.data = data
+		#flow.data = data
 		flow.hard_timeout = self.natMaxTime
 
 		flow.match.nw_proto =  pkt.ipv4.TCP_PROTOCOL
@@ -370,16 +363,16 @@ class Controller(ControllerBase):
 		flow.match.dl_dst = packet.dst
 		flow.match.dl_src = packet.src 
 		flow.match.nw_src = packet.payload.srcip
-		flow.match.nw_dst = IPAddr(dstIP)
+		flow.match.nw_dst = Controller.CONTROLLER_IP
 		flow.match.tp_src = app_port
 		flow.match.tp_dst = traffic_port
 		flow.match.in_port = data.in_port
 		flow.actions.append(of.ofp_action_dl_addr.set_src(self.routingPorts[r]['mac']))
 		flow.actions.append(of.ofp_action_dl_addr.set_dst(macNext))
-		flow.actions.append(of.ofp_action_nw_addr.set_src(IPAddr(troughIP)))
+		flow.actions.append(of.ofp_action_nw_addr.set_src(Controller.CONTROLLER_IP))
 		flow.actions.append(of.ofp_action_nw_addr.set_dst(IPAddr(dstIP)))
 		flow.actions.append(of.ofp_action_tp_port.set_src(traffic_port))
-		flow.actions.append(of.ofp_action_tp_port.set_dst(siso_port))
+		flow.actions.append(of.ofp_action_tp_port.set_dst(app_port))
 		flow.actions.append(of.ofp_action_output(port = portNext))
 		self.connection.send(flow)
 
@@ -388,7 +381,7 @@ class Controller(ControllerBase):
 		
 		# server - client
 		flow = of.ofp_flow_mod()
-		flow.data = data
+		#flow.data = data
 		flow.hard_timeout = self.natMaxTime
 
 		flow.match.nw_proto =  pkt.ipv4.TCP_PROTOCOL
@@ -396,23 +389,24 @@ class Controller(ControllerBase):
 		flow.match.dl_dst = packet.src
 		flow.match.dl_src = packet.dst 
 		flow.match.nw_src = IPAddr(dstIP)
-		flow.match.nw_dst = packet.payload.srcip
+		flow.match.nw_dst = Controller.CONTROLLER_IP
 		flow.match.tp_dst = traffic_port
-		flow.match.tp_src = siso_port
+		flow.match.tp_src = app_port
 		flow.match.in_port = portNext
 		flow.actions.append(of.ofp_action_dl_addr.set_src(self.routingPorts[r]['mac']))
 		flow.actions.append(of.ofp_action_dl_addr.set_dst(srcMac))
+		flow.actions.append(of.ofp_action_nw_addr.set_src(Controller.CONTROLLER_IP))
 		flow.actions.append(of.ofp_action_nw_addr.set_dst(srcIP))
-		flow.actions.append(of.ofp_action_nw_addr.set_src(packet.payload.dstip))
-		flow.actions.append(of.ofp_action_tp_port.set_src(app_port))
-		flow.actions.append(of.ofp_action_tp_port.set_dst(traffic_port))
+		flow.actions.append(of.ofp_action_tp_port.set_src(traffic_port))
+		flow.actions.append(of.ofp_action_tp_port.set_dst(app_port))
 		flow.actions.append(of.ofp_action_output(port = data.in_port))
 		self.connection.send(flow)
 
 		self.natTable[(dstIP,app_port)]=(srcIP,traffic_port,maxtime)
-		
+
 		log.debug("Sending nat reply to %r at free port %r \n"%(str(packet.payload.srcip),str(traffic_port)))
 		self.forge_udp(packet,data,traffic_port,16)
+
 
 
 
@@ -433,14 +427,17 @@ class Controller(ControllerBase):
 
 		# Ping to the router
 		if pingToRouter:
-			if icmp_packet.type == pkt.TYPE_ECHO_REQUEST:
+			if packet.payload.payload.type == pkt.TYPE_ECHO_REQUEST:
 				log.debug("Recived ping to router %r. Sending echo reply."%str(ipDst))
-				self.forge_ping_reply(paket,data)
+				self.forge_ping_reply(packet,data)
 		# Any other packet
 		elif self.routingPorts[r]["mac"] == str(packet.dst):
 			# Controller features
 			if packet.payload.dstip == Controller.CONTROLLER_IP:
-				if packet.payload.payload.dstport == Controller.CONTROLLER_PORT:
+				if packet.payload.protocol == pkt.ipv4.ICMP_PROTOCOL:
+					if packet.payload.payload.type == pkt.TYPE_ECHO_REQUEST:
+						self.forge_ping_reply(packet,data)
+				elif packet.payload.payload.dstport == Controller.CONTROLLER_PORT and packet.payload.protocol == pkt.ipv4.UDP_PROTOCOL and packet.payload.payload.dstport == 2525:
 					self.computeWMTraffic(packet, data, r)
 			# Normal traffic 
 			else:
@@ -468,7 +465,7 @@ class Controller(ControllerBase):
 		# ARP
 		if packet.type == pkt.ethernet.ARP_TYPE:
 			# Request for network features:
-			if  str( packet.payload.protodst) in (Controller.CONTROLLER_IP):
+			if  str(packet.payload.protodst) in (Controller.CONTROLLER_IP):
 				self.forge_arp_reply(arp_packet=packet.payload,data=data,smac=packet.src,rmac=self.routingPorts[r]['mac'])
 			else:
 				# Normal ARP
