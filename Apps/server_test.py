@@ -4,19 +4,19 @@ import socket
 import sys
 
 
-port = 5000
+port = 13377
 
-newport = 13377
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+	s.bind(('',port))
+	s.listen(10)
 
-with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-    s.bind(("127.0.0.1",port))
-    print("Listening on port ",port)
-    #while True:
-    data,addr = s.recvfrom(1024)
-    print("Data:",data)
-    print("Addr",addr)
+	while True:
+		conn,addr = s.accept()
+		data = conn.recv(1024)
+		print(data)
+		'''
+			TODO server download logic
+		'''
+		break
 
-    msg=int.from_bytes(data,sys.byteorder)
-    print("Recived",msg)
 
-    s.sendto(newport.to_bytes(2,sys.byteorder),addr)

@@ -232,7 +232,7 @@ class Controller(ControllerBase):
 		self.serverDecision = 0
 
 		self.localWMKeys = [
-			13337
+			0xbeef
 		]
 
 
@@ -308,7 +308,10 @@ class Controller(ControllerBase):
 		srcIP = packet.payload.srcip
 		srcMac = packet.src
 
-		key = packet.payload.payload.payload
+		msg = packet.payload.payload.payload
+		srcPrt = int.from_bytes(msg[0:2],'big')
+		key = msg[2:]
+
 
 		if key in self.localWMKeys:
 			dstIP = si
@@ -355,7 +358,6 @@ class Controller(ControllerBase):
 
 		# client - server
 		flow = of.ofp_flow_mod()
-		#flow.data = data
 		flow.hard_timeout = self.natMaxTime
 		flow.match.nw_proto =  pkt.ipv4.TCP_PROTOCOL
 		flow.match.dl_type = pkt.ethernet.IP_TYPE
@@ -363,7 +365,7 @@ class Controller(ControllerBase):
 		flow.match.dl_src = packet.src 
 		flow.match.nw_src = packet.payload.srcip
 		flow.match.nw_dst = Controller.CONTROLLER_IP
-		#flow.match.tp_src =  ---------------------------------------- TODO: make logic so that client can chose it's source port to establish communication
+		flow.match.tp_src =  srcPrt
 		flow.match.tp_dst = traffic_port
 		flow.match.in_port = data.in_port
 		flow.actions.append(of.ofp_action_dl_addr.set_src(self.routingPorts[r]['mac']))
@@ -395,7 +397,7 @@ class Controller(ControllerBase):
 		flow.actions.append(of.ofp_action_nw_addr.set_src(Controller.CONTROLLER_IP))
 		flow.actions.append(of.ofp_action_nw_addr.set_dst(srcIP))
 		flow.actions.append(of.ofp_action_tp_port.set_src(traffic_port))
-		flow.actions.append(of.ofp_action_tp_port.set_dst(app_port))
+		flow.actions.append(of.ofp_action_tp_port.set_dst(srcPrt))
 		flow.actions.append(of.ofp_action_output(port = data.in_port))
 		self.connection.send(flow)
 
