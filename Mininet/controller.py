@@ -65,7 +65,7 @@ class ControllerBase(object):
 
 					self.arpTable[r][arp_packet.protodst] = (data.in_port, packet.src)
 					log.debug("Sending ARP reply: %r -> %r"%(str(arp_packet.hwsrc),subIP))
-
+					return;
 				else:
 					# Ignore. In our topology each port coresponds to a subnet
 					log.debug("Could not figure out arp reply")
@@ -191,8 +191,8 @@ class Controller(ControllerBase):
 		self.arpTable=[
 		{
 			sdb:(1,"aa:aa:aa:aa:aa:aa"), 	#192.168.50.100
-			si:(2,"11:11:11:11:11:11"),		#192.168.150.100
-			so:(3,"99:99:99:99:99:99"),		#192.168.200.100
+			si:(2,"aa:aa:aa:aa:aa:bb"),		#192.168.150.100
+			so:(3,"aa:aa:aa:aa:aa:cc"),		#192.168.200.100
 			#Controller.CONTROLLER_IP:[0,"fa:fa:fa:fa:fa:fa"] #### BROKEN ARP
 		}]
 
@@ -227,7 +227,7 @@ class Controller(ControllerBase):
 		}
 
 		# Time untill port forcefully frees
-		self.natMaxTime = 1000*10
+		self.natMaxTime = 20000
 
 		self.serverDecision = 0
 
@@ -357,14 +357,13 @@ class Controller(ControllerBase):
 		flow = of.ofp_flow_mod()
 		#flow.data = data
 		flow.hard_timeout = self.natMaxTime
-
 		flow.match.nw_proto =  pkt.ipv4.TCP_PROTOCOL
 		flow.match.dl_type = pkt.ethernet.IP_TYPE
 		flow.match.dl_dst = packet.dst
 		flow.match.dl_src = packet.src 
 		flow.match.nw_src = packet.payload.srcip
 		flow.match.nw_dst = Controller.CONTROLLER_IP
-		flow.match.tp_src = app_port
+		#flow.match.tp_src =  ---------------------------------------- TODO: make logic so that client can chose it's source port to establish communication
 		flow.match.tp_dst = traffic_port
 		flow.match.in_port = data.in_port
 		flow.actions.append(of.ofp_action_dl_addr.set_src(self.routingPorts[r]['mac']))
@@ -381,13 +380,11 @@ class Controller(ControllerBase):
 		
 		# server - client
 		flow = of.ofp_flow_mod()
-		#flow.data = data
 		flow.hard_timeout = self.natMaxTime
-
 		flow.match.nw_proto =  pkt.ipv4.TCP_PROTOCOL
 		flow.match.dl_type = pkt.ethernet.IP_TYPE
-		flow.match.dl_dst = packet.src
-		flow.match.dl_src = packet.dst 
+		flow.match.dl_dst = packet.dst
+		flow.match.dl_src = macNext
 		flow.match.nw_src = IPAddr(dstIP)
 		flow.match.nw_dst = Controller.CONTROLLER_IP
 		flow.match.tp_dst = traffic_port

@@ -11,9 +11,9 @@ class SimpleNat( Topo ):
         r = self.addSwitch('r',dpid='000000000001', listenPort='6634')
 
         # Hosts
-        sdb = self.addHost('sdb', ip='192.168.50.100/24', defaultRoute = 'via 192.168.50.1', mac='aa:aa:aa:aa:aa:aa')
-        si = self.addHost('si', ip='192.168.150.100/24', defaultRoute = 'via 192.168.150.1', mac='11:11:11:11:11:11')
-        so = self.addHost('so', ip='192.168.200.100/24', defaultRoute = 'via 192.168.200.1', mac='99:99:99:99:99:99')
+        sdb = self.addHost('sdb', ip='192.168.50.100/24', defaultRoute = "via 192.168.50.1", mac='aa:aa:aa:aa:aa:aa')
+        si = self.addHost('si', ip='192.168.150.100/24', defaultRoute = "via 192.168.150.1", mac='aa:aa:aa:aa:aa:bb')
+        so = self.addHost('so', ip='192.168.200.100/24', defaultRoute = "via 192.168.200.1", mac='aa:aa:aa:aa:aa:cc')
 
         # Hosts placement
         self.addLink(sdb, r, port1=0, port2=1)
