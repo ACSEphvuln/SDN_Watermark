@@ -91,10 +91,10 @@ class Watermarker():
 TESTING
 '''
 if __name__ == '__main__':
-	import binascii
+	# import binascii
 	pathIN = './Sample_Images/Original/lena.png'
 	pathTMP = './Sample_Images/Test/lena.png'
-	#wm = int(binascii.hexlify(b'test'))
+	# wm = int(binascii.hexlify(b'test'))
 	wm = 1337
 	w = Watermarker(pathIN)
 	i = w.applyWM(wm)

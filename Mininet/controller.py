@@ -18,7 +18,7 @@ so ="192.168.200.100"
 siso_port = 12345
 app_port = 13377
 
-#https://github.com/Ephvuln/SNM_SDN
+# ref: https://github.com/Ephvuln/SNM_SDN
 # Base controller functions
 class ControllerBase(object):
 	def __init__(self,connection):
@@ -72,9 +72,6 @@ class ControllerBase(object):
 
 		elif arp_packet.opcode == pkt.arp.REPLY:
 			pass
-			# log.debug("Received ARP REPLY. Adding to ARP table")
-			# self.arpTable[r][packet.src] = [data.in_port, packet.src]
-			# ! Can pe poisoned if handeled this way
 
 
 	def forge_ping_reply(self,packet,data):
