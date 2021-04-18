@@ -20,7 +20,7 @@ def applyWM(path,wm):
 			if (wm >> k) == 0:
 				k=0 
 
-			if not (pix[i,j][0] & 1) == ((wm >> k) & 1):
+			if (pix[i,j][0] & 1) != ((wm >> k) & 1):
 				# Invert last bit to match watermark bit
 				pix[i,j] = (pix[i,j][0] ^ 1, pix[i,j][1], pix[i,j][2])
 			k+=1
@@ -64,5 +64,3 @@ def testProgram(pathIN,pathTMP,wm):
 	i.save(pathTMP)
 	i.close()
 	print("Checked percentage:",checkWM(pathTMP,wm))
-
-#((secret_decimal_8>>i) &1)

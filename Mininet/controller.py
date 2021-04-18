@@ -18,7 +18,7 @@ so ="192.168.200.100"
 siso_port = 12345
 app_port = 13377
 
-
+#https://github.com/Ephvuln/SNM_SDN
 # Base controller functions
 class ControllerBase(object):
 	def __init__(self,connection):
@@ -193,7 +193,6 @@ class Controller(ControllerBase):
 			sdb:(1,"aa:aa:aa:aa:aa:aa"), 	#192.168.50.100
 			si:(2,"aa:aa:aa:aa:aa:bb"),		#192.168.150.100
 			so:(3,"aa:aa:aa:aa:aa:cc"),		#192.168.200.100
-			#Controller.CONTROLLER_IP:[0,"fa:fa:fa:fa:fa:fa"] #### BROKEN ARP
 		}]
 
 
@@ -412,7 +411,7 @@ class Controller(ControllerBase):
 	def handleIP(self, packet, data, r):
 		ipDst = packet.payload.dstip
 		ipSrc = packet.payload.srcip
-		log.debug("Got packet srcIP:%s with macSrc:%s TO dstIP:%s macDst:%s"%(ipSrc,str(packet.src),ipDst,str(packet.dst)))
+		log.debug("Got packet srcIP:%s macSrc:%s TO dstIP:%s macDst:%s"%(ipSrc,str(packet.src),ipDst,str(packet.dst)))
 
 		ipPacket = packet.payload
 
@@ -436,7 +435,8 @@ class Controller(ControllerBase):
 				if packet.payload.protocol == pkt.ipv4.ICMP_PROTOCOL:
 					if packet.payload.payload.type == pkt.TYPE_ECHO_REQUEST:
 						self.forge_ping_reply(packet,data)
-				elif packet.payload.payload.dstport == Controller.CONTROLLER_PORT and packet.payload.protocol == pkt.ipv4.UDP_PROTOCOL and packet.payload.payload.dstport == 2525:
+				elif packet.payload.payload.dstport == Controller.CONTROLLER_PORT \
+						and packet.payload.protocol == pkt.ipv4.UDP_PROTOCOL:
 					self.computeWMTraffic(packet, data, r)
 			# Normal traffic 
 			else:
