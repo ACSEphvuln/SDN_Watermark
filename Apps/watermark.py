@@ -63,7 +63,7 @@ class Watermarker():
 		return self.img
 
 
-	def checkWM(self,wm):
+	def checkWM(self):
 
 		self.i = 0
 		self.j = 0
@@ -73,19 +73,18 @@ class Watermarker():
 		# Check preamble
 		if self.__readFromImg(64) != Watermarker.PREAMBLE:
 			print("No watermark")
-			return None
+			return 0
 
 		# Read size
 		wmsize = self.__readFromImg(16)
 		if (8+2+wmsize)*8 > self.img.size[0]*self.img.size[1]:
 			print("Corrupted watermark")
-			return None
+			return 0
 
 		# Read watermark
 		wm = self.__readFromImg(wmsize*8)
 
 		return wm
-
 
 '''
 TESTING
@@ -101,4 +100,4 @@ if __name__ == '__main__':
 	i.save(pathTMP)
 
 	w = Watermarker(pathTMP)
-	print("Watermark in file:",w.checkWM(wm))
+	print("Watermark in file:",w.checkWM())

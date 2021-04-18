@@ -228,7 +228,10 @@ class Controller(ControllerBase):
 		self.serverDecision = 0
 
 		self.localWMKeys = [
-			0xbeef
+			0xbeef,
+			0xf00d,
+			0xdeadc0de,
+			0xbadbabe
 		]
 
 
@@ -306,10 +309,11 @@ class Controller(ControllerBase):
 
 		msg = packet.payload.payload.payload
 		srcPrt = int.from_bytes(msg[0:2],'big')
-		key = msg[2:]
+		key = int.from_bytes(msg[2:],'big')
 
 
 		if key in self.localWMKeys:
+			log.debug("Recived known watermark")
 			dstIP = si
 			self.serverDecision = 1 # prioritize outside servers next
 		else:

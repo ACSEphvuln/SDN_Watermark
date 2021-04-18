@@ -1,3 +1,5 @@
 Apps/Sample_Images
+Apps/SI/*
+Apps/SO/*
 sendfiles.sh
 *.png
